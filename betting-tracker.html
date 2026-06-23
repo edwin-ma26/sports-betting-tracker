@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beginner Sports Betting Tracker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+
+  header { background: #1a1f2e; border-bottom: 1px solid #2d3748; padding: 20px 32px; display: flex; align-items: center; gap: 16px; }
+  header h1 { font-size: 1.5rem; font-weight: 700; color: #fff; }
+  header span { font-size: 0.85rem; color: #64748b; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; padding: 24px 32px 0; }
+  .stat-card { background: #1a1f2e; border: 1px solid #2d3748; border-radius: 10px; padding: 18px 20px; }
+  .stat-card .label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .stat-card .value { font-size: 1.5rem; font-weight: 700; }
+  .stat-card .value.green { color: #22c55e; }
+  .stat-card .value.red { color: #ef4444; }
+  .stat-card .value.yellow { color: #f59e0b; }
+  .stat-card .value.blue { color: #60a5fa; }
+  .stat-card .sub { font-size: 0.72rem; color: #64748b; margin-top: 4px; }
+
+  .table-wrap { padding: 24px 32px 48px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  thead th { background: #1a1f2e; color: #94a3b8; font-weight: 600; text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.05em; padding: 12px 14px; text-align: left; border-bottom: 1px solid #2d3748; white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid #1e2535; transition: background 0.15s; }
+  tbody tr:hover { background: #1a1f2e; }
+  tbody td { padding: 11px 14px; vertical-align: middle; }
+
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+  .badge.won { background: #14532d; color: #4ade80; }
+  .badge.lost { background: #450a0a; color: #f87171; }
+  .badge.pending { background: #1e3a5f; color: #93c5fd; }
+  .badge.push { background: #2d1f00; color: #fbbf24; }
+
+  .site-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; }
+  .site-fanduel { background: #1d3461; color: #60a5fa; }
+  .site-draftkings { background: #1a2e1a; color: #4ade80; }
+  .site-kalshi { background: #2d1f4e; color: #c084fc; }
+
+  .profit.pos { color: #22c55e; font-weight: 600; }
+  .profit.neg { color: #ef4444; font-weight: 600; }
+
+  .chance-bar { display: flex; align-items: center; gap: 8px; }
+  .bar-bg { background: #1e2535; border-radius: 4px; height: 6px; width: 60px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .chance-label { font-size: 0.75rem; color: #94a3b8; width: 34px; }
+
+  .bonus-note { font-size: 0.7rem; color: #f59e0b; margin-top: 2px; }
+
+  .section-header { font-size: 0.7rem; color: #f59e0b; text-transform: uppercase; letter-spacing: 0.08em; padding: 8px 14px 4px; background: #12151f; border-bottom: 1px solid #1e2535; }
+
+  .add-btn { display: inline-flex; align-items: center; gap: 6px; background: #3b82f6; color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-bottom: 16px; transition: background 0.15s; }
+  .add-btn:hover { background: #2563eb; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #1a1f2e; border: 1px solid #2d3748; border-radius: 12px; padding: 28px; width: 480px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
+  .modal h2 { margin-bottom: 20px; font-size: 1.1rem; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .form-row.full { grid-template-columns: 1fr; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em; }
+  .form-group input, .form-group select { background: #0f1117; border: 1px solid #2d3748; color: #e2e8f0; border-radius: 6px; padding: 8px 10px; font-size: 0.85rem; }
+  .form-group input:focus, .form-group select:focus { outline: none; border-color: #3b82f6; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+  .btn-cancel { background: #2d3748; color: #e2e8f0; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: 0.85rem; }
+  .btn-save { background: #3b82f6; color: #fff; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: 0.85rem; font-weight: 600; }
+
+  .delete-btn { background: none; border: none; color: #475569; cursor: pointer; font-size: 1rem; padding: 2px 6px; border-radius: 4px; }
+  .delete-btn:hover { color: #ef4444; background: #450a0a22; }
+  .edit-btn { background: none; border: none; color: #475569; cursor: pointer; font-size: 1rem; padding: 2px 6px; border-radius: 4px; }
+  .edit-btn:hover { color: #60a5fa; background: #1d346122; }
+
+  .wager-cell { white-space: nowrap; }
+  .wager-bonus { font-size: 0.68rem; color: #f59e0b; display: block; }
+
+  .roi-explainer { background: #1a1f2e; border: 1px solid #2d3748; border-radius: 8px; padding: 14px 20px; margin: 0 32px 0; font-size: 0.78rem; color: #94a3b8; line-height: 1.6; }
+  .roi-explainer strong { color: #e2e8f0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>⚽ Beginner Sports Betting Tracker</h1>
+    <span>2026 FIFA World Cup &amp; more</span>
+  </div>
+</header>
+
+<div class="stats-grid" id="statsGrid"></div>
+
+<div style="padding: 12px 32px 0 32px; font-size: 0.72rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em;">P&amp;L by Site</div>
+<div class="stats-grid" id="siteGrid"></div>
+
+<div style="padding: 16px 32px 8px;">
+  <div class="roi-explainer" id="roiExplainer"></div>
+</div>
+
+<div class="table-wrap">
+  <button class="add-btn" onclick="openModal()">+ Add Bet</button>
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Site</th>
+        <th>Event</th>
+        <th>Bet Type</th>
+        <th>Wager</th>
+        <th>Payout</th>
+        <th>Status</th>
+        <th>Net Profit</th>
+        <th>Odds</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="betsBody"></tbody>
+  </table>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2 id="modalTitle">Add Bet</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="f-date" />
+      </div>
+      <div class="form-group">
+        <label>Site</label>
+        <select id="f-site">
+          <option>FanDuel</option>
+          <option>DraftKings</option>
+          <option>Kalshi</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row full">
+      <div class="form-group">
+        <label>Event</label>
+        <input type="text" id="f-event" placeholder="e.g. France vs Iraq" />
+      </div>
+    </div>
+    <div class="form-row full">
+      <div class="form-group">
+        <label>Bet Type</label>
+        <input type="text" id="f-bettype" placeholder="e.g. France to win" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Wager ($)</label>
+        <input type="number" id="f-wager" min="0" step="0.01" placeholder="0.00" />
+      </div>
+      <div class="form-group">
+        <label>Payout ($)</label>
+        <input type="number" id="f-payout" min="0" step="0.01" placeholder="0.00" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Status</label>
+        <select id="f-status">
+          <option value="Won">Won</option>
+          <option value="Lost">Lost</option>
+          <option value="Pending">Pending</option>
+          <option value="Push">Push</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Bonus Bet?</label>
+        <select id="f-bonus">
+          <option value="no">No (Real Money)</option>
+          <option value="yes">Yes (Bonus Bet)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row full">
+      <div class="form-group">
+        <label>American Odds (optional — leave 0 to auto-calculate)</label>
+        <input type="number" id="f-chance" step="1" placeholder="e.g. +150 or -200" />
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveBet()">Save Bet</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Data ────────────────────────────────────────────────────────────────────
+// bonus: true = this wager was a bonus bet (doesn't count as real money spent)
+let bets = JSON.parse(localStorage.getItem('bets') || 'null') || [
+  { id:1, date:'2026-06-21', site:'FanDuel',    event:'France vs Iraq',        betType:'France to win',                    wager:5.00,  payout:5.33,  status:'Won',  bonus:false, chance:0 },
+  { id:2, date:'2026-06-21', site:'DraftKings', event:'Egypt vs NZ',           betType:'2-0 correct score',                wager:5.00,  payout:0.00,  status:'Lost', bonus:false, chance:0 },
+  { id:3, date:'2026-06-21', site:'DraftKings', event:'Argentina vs Australia',betType:'Argentina to win',                 wager:25.00, payout:12.50, status:'Won',  bonus:true,  chance:0 },
+  { id:4, date:'2026-06-21', site:'Kalshi',     event:'Egypt',                 betType:'Egypt to win',                    wager:10.00, payout:37.15, status:'Won',  bonus:false, chance:0 },
+  { id:5, date:'2026-06-21', site:'Kalshi',     event:'Argentina',             betType:'Argentina to win',                wager:37.15, payout:54.21, status:'Won',  bonus:false, chance:0 },
+  { id:6, date:'2026-06-21', site:'Kalshi',     event:'Argentina',             betType:'Argentina to win with over 1.5 goals', wager:15.00, payout:32.80, status:'Won', bonus:true,  chance:0 },
+  { id:7, date:'2026-06-22', site:'FanDuel',    event:'Norway vs Senegal',     betType:'Norway to win',                   wager:50.00, payout:125.00,status:'Won',  bonus:true,  chance:0 },
+  { id:8, date:'2026-06-22', site:'FanDuel',    event:'France vs Iraq',        betType:'Mbappe to have 1+ shots on target', wager:5.00, payout:5.20, status:'Won',  bonus:false, chance:0 },
+  { id:9, date:'2026-06-22', site:'DraftKings', event:'Norway vs Senegal',     betType:'Senegal to win',                  wager:25.00, payout:0.00,  status:'Lost', bonus:true,  chance:0 },
+  { id:10,date:'2026-06-22', site:'DraftKings', event:'Norway vs Senegal',     betType:'5 pick parlay',                   wager:25.00, payout:0.00,  status:'Lost', bonus:true,  chance:0 },
+  { id:11,date:'2026-06-22', site:'Kalshi',     event:'France vs Iraq',        betType:'France to win',                   wager:38.48, payout:41.18, status:'Won',  bonus:false, chance:0 },
+  { id:12,date:'2026-06-22', site:'Kalshi',     event:'France vs Iraq',        betType:'France 10+ corners',              wager:48.51, payout:2.99,  status:'Won',  bonus:false, chance:0 },
+  { id:13,date:'2026-06-22', site:'Kalshi',     event:'France vs Iraq',        betType:'Tie',                             wager:19.99, payout:2.95,  status:'Won',  bonus:false, chance:0 },
+];
+let nextId = Math.max(...bets.map(b=>b.id)) + 1;
+
+const REAL_MONEY_INPUT = 25;
+const TOTAL_BONUS = 265;
+const BONUS_REMAINING = 125;
+
+function save() { localStorage.setItem('bets', JSON.stringify(bets)); }
+
+// ─── Derived stats ────────────────────────────────────────────────────────────
+function netProfit(b) {
+  if (b.status === 'Pending') return null;
+  if (b.status === 'Push') return 0;
+  return b.payout - b.wager;
+}
+
+function americanOdds(b) {
+  // manual override stored as American odds (e.g. 150 or -200)
+  if (b.chance && b.chance !== 0) return b.chance;
+  if (b.payout > 0 && b.wager > 0 && b.status !== 'Pending') {
+    const dec = b.payout / b.wager; // decimal odds
+    if (dec >= 2) return Math.round((dec - 1) * 100);   // positive (underdog)
+    else return Math.round(-100 / (dec - 1));             // negative (favorite)
+  }
+  return null;
+}
+
+function oddsToImpliedPct(odds) {
+  if (odds === null) return null;
+  if (odds < 0) return (-odds) / (-odds + 100) * 100;
+  return 100 / (odds + 100) * 100;
+}
+
+function computeStats() {
+  const settled = bets.filter(b => b.status !== 'Pending');
+  const won = settled.filter(b => b.status === 'Won').length;
+  const totalBets = settled.length;
+  const winRate = totalBets ? (won / totalBets * 100).toFixed(1) : 0;
+
+  // Real money wagered (non-bonus bets, settled)
+  const realWagered = settled.filter(b=>!b.bonus).reduce((s,b)=>s+b.wager,0);
+  // Bonus wagered
+  const bonusWagered = settled.filter(b=>b.bonus).reduce((s,b)=>s+b.wager,0);
+
+  // Net profit on real money bets
+  const realNetProfit = settled.filter(b=>!b.bonus).reduce((s,b)=>s+(netProfit(b)||0),0);
+  // Net winnings from bonus bets (only count payout - wager when won)
+  const bonusNetProfit = settled.filter(b=>b.bonus).reduce((s,b)=>s+(netProfit(b)||0),0);
+
+  // Total cash in hand = real_money_input + realNetProfit + bonusNetProfit
+  // We started with $25 real and used $140 bonus
+  // ROI = (realNetProfit + bonusNetProfit) / REAL_MONEY_INPUT * 100
+  const totalProfit = realNetProfit + bonusNetProfit;
+  const totalInvested = REAL_MONEY_INPUT + (TOTAL_BONUS - BONUS_REMAINING);
+  const roi = (totalProfit / totalInvested * 100).toFixed(1);
+  const totalWagered = settled.reduce((s,b) => s + b.wager, 0);
+
+  // Average odds (American) across settled bets with calculable odds
+  const oddsArr = settled.map(b => americanOdds(b)).filter(o => o !== null);
+  const avgOdds = oddsArr.length ? Math.round(oddsArr.reduce((s,o) => s+o, 0) / oddsArr.length) : null;
+
+  // Biggest win / loss
+  const profits = settled.map(b => netProfit(b) || 0);
+  const biggestWin = profits.length ? Math.max(...profits) : 0;
+  const biggestLoss = profits.length ? Math.min(...profits) : 0;
+
+  // P&L by site
+  const sites = [...new Set(bets.map(b => b.site))];
+  const bysite = {};
+  for (const site of sites) {
+    const sb = settled.filter(b => b.site === site);
+    const sw = sb.filter(b => b.status === 'Won').length;
+    bysite[site] = {
+      pnl: sb.reduce((s,b) => s + (netProfit(b)||0), 0),
+      won: sw,
+      total: sb.length,
+    };
+  }
+
+  return { won, totalBets, winRate, realNetProfit, bonusNetProfit, totalProfit, realWagered, bonusWagered, roi, totalInvested, totalWagered, avgOdds, biggestWin, biggestLoss, bysite };
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function siteClass(site) {
+  if (site === 'FanDuel') return 'site-fanduel';
+  if (site === 'DraftKings') return 'site-draftkings';
+  if (site === 'Kalshi') return 'site-kalshi';
+  return '';
+}
+
+function fmtMoney(v) {
+  if (v === null) return '—';
+  const abs = Math.abs(v).toFixed(2);
+  return v < 0 ? `-$${abs}` : `$${v.toFixed(2)}`;
+}
+
+function render() {
+  const stats = computeStats();
+
+  // Stats cards
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card">
+      <div class="label">Record</div>
+      <div class="value blue">${stats.won}–${stats.totalBets - stats.won}</div>
+      <div class="sub">${stats.winRate}% win rate</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Real Money In</div>
+      <div class="value yellow">$${REAL_MONEY_INPUT.toFixed(2)}</div>
+      <div class="sub">Actual cash deposited</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Bonus Remaining</div>
+      <div class="value yellow">$${BONUS_REMAINING.toFixed(2)}</div>
+      <div class="sub">$${stats.bonusWagered.toFixed(2)} used of $${TOTAL_BONUS.toFixed(2)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Real $ P&L</div>
+      <div class="value ${stats.realNetProfit >= 0 ? 'green':'red'}">${fmtMoney(stats.realNetProfit)}</div>
+      <div class="sub">On cash bets</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Bonus $ P&L</div>
+      <div class="value ${stats.bonusNetProfit >= 0 ? 'green':'red'}">${fmtMoney(stats.bonusNetProfit)}</div>
+      <div class="sub">Net winnings from bonuses</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Total P&L</div>
+      <div class="value ${stats.totalProfit >= 0 ? 'green':'red'}">${fmtMoney(stats.totalProfit)}</div>
+      <div class="sub">vs $${REAL_MONEY_INPUT} in</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">ROI</div>
+      <div class="value ${parseFloat(stats.roi) >= 0 ? 'green':'red'}">${stats.roi}%</div>
+      <div class="sub">vs $${stats.totalInvested.toFixed(2)} in (cash + bonus)</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Units Wagered</div>
+      <div class="value blue">$${stats.totalWagered.toFixed(2)}</div>
+      <div class="sub">Total staked (all bets)</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Avg Odds</div>
+      <div class="value ${stats.avgOdds === null ? 'blue' : stats.avgOdds > 0 ? 'yellow' : 'blue'}">${stats.avgOdds === null ? '—' : stats.avgOdds > 0 ? '+'+stats.avgOdds : stats.avgOdds}</div>
+      <div class="sub">${stats.avgOdds !== null && stats.avgOdds > 0 ? 'Underdog lean' : stats.avgOdds !== null ? 'Favorite lean' : ''}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Biggest Win</div>
+      <div class="value green">${fmtMoney(stats.biggestWin)}</div>
+      <div class="sub">Single bet</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Biggest Loss</div>
+      <div class="value red">${fmtMoney(stats.biggestLoss)}</div>
+      <div class="sub">Single bet</div>
+    </div>
+  `;
+
+  // Site breakdown
+  const siteColors = { FanDuel: '#60a5fa', DraftKings: '#4ade80', Kalshi: '#c084fc' };
+  let siteHtml = Object.entries(stats.bysite).map(([site, s]) => `
+    <div class="stat-card" style="border-left: 3px solid ${siteColors[site] || '#64748b'}">
+      <div class="label">${site}</div>
+      <div class="value ${s.pnl >= 0 ? 'green' : 'red'}">${fmtMoney(s.pnl)}</div>
+      <div class="sub">${s.won}–${s.total - s.won} (${s.total ? (s.won/s.total*100).toFixed(0) : 0}% win)</div>
+    </div>`).join('');
+  document.getElementById('siteGrid').innerHTML = siteHtml;
+
+  document.getElementById('roiExplainer').innerHTML = `
+    <strong>ROI note:</strong> You put in <strong>$${REAL_MONEY_INPUT}</strong> real cash and have used <strong>$${(TOTAL_BONUS - BONUS_REMAINING).toFixed(2)}</strong> of $${TOTAL_BONUS} in bonus bets ($${BONUS_REMAINING} remaining).
+    ROI = (all net profit) ÷ $${stats.totalInvested.toFixed(2)} total invested (cash + bonus used).
+    Bonus bet losses show $0 lost (you never spent real cash), but wins add real profit.
+  `;
+
+  // Group by date
+  const grouped = {};
+  [...bets].sort((a,b)=>b.date.localeCompare(a.date)).forEach(b => {
+    if (!grouped[b.date]) grouped[b.date] = [];
+    grouped[b.date].push(b);
+  });
+
+  let html = '';
+  for (const [date, rows] of Object.entries(grouped)) {
+    html += `<tr><td colspan="10" class="section-header">${date}</td></tr>`;
+    for (const b of rows) {
+      const np = netProfit(b);
+      const npStr = np === null ? '—' : fmtMoney(np);
+      const npClass = np === null ? '' : np >= 0 ? 'pos' : 'neg';
+      const odds = americanOdds(b);
+      let chanceHtml = '—';
+      if (odds !== null) {
+        const pct = oddsToImpliedPct(odds);
+        const clamp = Math.min(100, Math.max(0, pct));
+        const color = clamp > 60 ? '#22c55e' : clamp > 40 ? '#f59e0b' : '#ef4444';
+        const oddsStr = odds > 0 ? `+${odds}` : `${odds}`;
+        chanceHtml = `<div class="chance-bar">
+          <div class="bar-bg"><div class="bar-fill" style="width:${clamp}%;background:${color}"></div></div>
+          <span class="chance-label" style="color:${color};font-weight:600;width:52px">${oddsStr}</span>
+        </div>`;
+      }
+      html += `<tr>
+        <td>${b.date}</td>
+        <td><span class="site-badge ${siteClass(b.site)}">${b.site}</span></td>
+        <td>${b.event}</td>
+        <td>${b.betType}</td>
+        <td class="wager-cell">$${b.wager.toFixed(2)}${b.bonus ? '<span class="wager-bonus">bonus bet</span>' : ''}</td>
+        <td>$${b.payout.toFixed(2)}</td>
+        <td><span class="badge ${b.status.toLowerCase()}">${b.status}</span></td>
+        <td class="profit ${npClass}">${npStr}</td>
+        <td>${chanceHtml}</td>
+        <td style="white-space:nowrap">
+          <button class="edit-btn" onclick="editBet(${b.id})" title="Edit">✎</button>
+          <button class="delete-btn" onclick="deleteBet(${b.id})" title="Delete">✕</button>
+        </td>
+      </tr>`;
+    }
+  }
+  document.getElementById('betsBody').innerHTML = html;
+}
+
+function deleteBet(id) {
+  if (!confirm('Delete this bet?')) return;
+  bets = bets.filter(b => b.id !== id);
+  save();
+  render();
+}
+
+// ─── Modal ────────────────────────────────────────────────────────────────────
+let editingId = null;
+
+function openModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Add Bet';
+  document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('f-site').value = 'FanDuel';
+  document.getElementById('f-event').value = '';
+  document.getElementById('f-bettype').value = '';
+  document.getElementById('f-wager').value = '';
+  document.getElementById('f-payout').value = '';
+  document.getElementById('f-status').value = 'Won';
+  document.getElementById('f-bonus').value = 'no';
+  document.getElementById('f-chance').value = '';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function editBet(id) {
+  const b = bets.find(x => x.id === id);
+  if (!b) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'Edit Bet';
+  document.getElementById('f-date').value = b.date;
+  document.getElementById('f-site').value = b.site;
+  document.getElementById('f-event').value = b.event;
+  document.getElementById('f-bettype').value = b.betType;
+  document.getElementById('f-wager').value = b.wager;
+  document.getElementById('f-payout').value = b.payout;
+  document.getElementById('f-status').value = b.status;
+  document.getElementById('f-bonus').value = b.bonus ? 'yes' : 'no';
+  document.getElementById('f-chance').value = b.chance || '';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  editingId = null;
+}
+
+function saveBet() {
+  const fields = {
+    date: document.getElementById('f-date').value,
+    site: document.getElementById('f-site').value,
+    event: document.getElementById('f-event').value.trim(),
+    betType: document.getElementById('f-bettype').value.trim(),
+    wager: parseFloat(document.getElementById('f-wager').value) || 0,
+    payout: parseFloat(document.getElementById('f-payout').value) || 0,
+    status: document.getElementById('f-status').value,
+    bonus: document.getElementById('f-bonus').value === 'yes',
+    chance: parseFloat(document.getElementById('f-chance').value) || 0,
+  };
+  if (!fields.date || !fields.event || !fields.wager) { alert('Fill in date, event, and wager.'); return; }
+  if (editingId !== null) {
+    bets = bets.map(b => b.id === editingId ? { ...b, ...fields } : b);
+  } else {
+    bets.push({ id: nextId++, ...fields });
+  }
+  save();
+  render();
+  closeModal();
+}
+
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+render();
+</script>
+</body>
+</html>
