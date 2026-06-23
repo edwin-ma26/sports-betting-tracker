@@ -357,6 +357,12 @@ function netProfit(b) {
   return b.payout - b.wager;
 }
 
+function hypotheticalProfit(b) {
+  if (b.status === 'Pending') return null;
+  if (b.status === 'Push') return 0;
+  return b.payout - b.wager;
+}
+
 function americanOdds(b) {
   // manual override stored as American odds (e.g. 150 or -200)
   if (b.chance && b.chance !== 0) return b.chance;
@@ -391,7 +397,7 @@ function computeStats() {
   const totalProfit    = realNetProfit + bonusNetProfit;
 
   // Hypothetical P&L: treats every bet as real money (for performance benchmarking)
-  const hypTotalProfit = settled.reduce((s,b)=>s+(netProfit(b)||0),0);
+  const hypTotalProfit = settled.reduce((s,b)=>s+(hypotheticalProfit(b)||0),0);
 
   const totalInvested = REAL_MONEY_INPUT + (TOTAL_BONUS - BONUS_REMAINING);
   const roi    = (totalProfit    / totalInvested * 100).toFixed(1);
