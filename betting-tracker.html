@@ -288,61 +288,47 @@
 
 <script>
 // ─── Data ────────────────────────────────────────────────────────────────────
-// bonus: true = this wager was a bonus bet (doesn't count as real money spent)
-const DATA_VERSION = 2;
-if (parseInt(localStorage.getItem('dataVersion') || '0') < DATA_VERSION) {
-  localStorage.removeItem('bets');
-  localStorage.removeItem('txns');
-  localStorage.setItem('dataVersion', DATA_VERSION);
+let bets = [];
+let txns = [];
+let nextId = 1;
+let nextTxnId = 1;
+
+async function loadData() {
+  try {
+    const res = await fetch('/api/data');
+    const data = await res.json();
+    bets = data.bets || [];
+    txns = data.txns || [];
+  } catch {
+    bets = [];
+    txns = [];
+  }
+  nextId    = bets.length ? Math.max(...bets.map(b=>b.id)) + 1 : 1;
+  nextTxnId = txns.length ? Math.max(...txns.map(t=>t.id)) + 1 : 1;
+  render();
 }
 
-let bets = JSON.parse(localStorage.getItem('bets') || 'null') || [
-  { id:1, date:'2026-06-21', site:'FanDuel',    event:'France vs Iraq',        betType:'France to win',                    wager:5.00,  payout:5.33,  status:'Won',  bonus:false, chance:0 },
-  { id:2, date:'2026-06-21', site:'DraftKings', event:'Egypt vs New Zealand',   betType:'2-0 correct score',                wager:5.00,  payout:0.00,  status:'Lost', bonus:false, chance:0 },
-  { id:3, date:'2026-06-21', site:'DraftKings', event:'Argentina vs Austria',  betType:'Argentina to win',                 wager:25.00, payout:37.50, status:'Won',  bonus:true,  chance:0 },
-  { id:4, date:'2026-06-21', site:'Kalshi',     event:'Egypt vs New Zealand',  betType:'Egypt to win',                    wager:10.00, payout:37.15, status:'Won',  bonus:false, chance:0 },
-  { id:5, date:'2026-06-21', site:'Kalshi',     event:'Argentina vs Austria',  betType:'Argentina to win',                wager:37.15, payout:54.21, status:'Won',  bonus:false, chance:0 },
-  { id:6, date:'2026-06-21', site:'Kalshi',     event:'Argentina vs Austria',  betType:'Argentina to win with over 1.5 goals', wager:15.00, payout:32.80, status:'Won', bonus:true,  chance:0 },
-  { id:7, date:'2026-06-22', site:'FanDuel',    event:'Norway vs Senegal',     betType:'Norway to win',                   wager:50.00, payout:125.00,status:'Won',  bonus:true,  chance:0 },
-  { id:8, date:'2026-06-22', site:'FanDuel',    event:'France vs Iraq',        betType:'Mbappe to have 1+ shots on target', wager:5.00, payout:5.20, status:'Won',  bonus:false, chance:0 },
-  { id:9, date:'2026-06-22', site:'DraftKings', event:'Norway vs Senegal',     betType:'Senegal to win',                  wager:25.00, payout:0.00,  status:'Lost', bonus:true,  chance:0 },
-  { id:10,date:'2026-06-22', site:'DraftKings', event:'Norway vs Senegal',     betType:'5 pick parlay',                   wager:25.00, payout:0.00,  status:'Lost', bonus:true,  chance:0 },
-  { id:11,date:'2026-06-22', site:'Kalshi',     event:'France vs Iraq',        betType:'France to win',                   wager:38.48, payout:41.18, status:'Won',  bonus:false, chance:0 },
-  { id:12,date:'2026-06-22', site:'Kalshi',     event:'France vs Iraq',        betType:'France 10+ corners',              wager:48.51, payout:2.99,  status:'Lost', bonus:false, chance:0 },
-  { id:13,date:'2026-06-22', site:'Kalshi',     event:'France vs Iraq',        betType:'Tie',                             wager:19.99, payout:2.95,  status:'Lost', bonus:false, chance:0 },
-  { id:14,date:'2026-06-22', site:'Kalshi',     event:'Jordan vs Algeria',     betType:'Algeria to win',                  wager:19.78, payout:35.92, status:'Won',  bonus:false, chance:0 },
-];
-let nextId = Math.max(...bets.map(b=>b.id)) + 1;
+async function saveData() {
+  await fetch('/api/data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ bets, txns })
+  });
+}
 
-// Transactions: deposits, withdrawals, bonus credits per site
-let txns = JSON.parse(localStorage.getItem('txns') || 'null') || [
-  { id:1, date:'2026-06-21', site:'FanDuel',    type:'deposit',    amount:5.00  },
-  { id:2, date:'2026-06-21', site:'DraftKings', type:'deposit',    amount:5.00  },
-  { id:3, date:'2026-06-21', site:'Kalshi',     type:'deposit',    amount:10.00 },
-  { id:4, date:'2026-06-22', site:'FanDuel',    type:'withdrawal', amount:0     },
-];
-let nextTxnId = Math.max(...txns.map(t=>t.id)) + 1;
+function save()     { saveData(); }
+function saveTxns() { saveData(); }
 
 const REAL_MONEY_INPUT = 25;
 const TOTAL_BONUS = 265;
 const BONUS_REMAINING = 125;
 
-function save() { localStorage.setItem('bets', JSON.stringify(bets)); }
-function saveTxns() { localStorage.setItem('txns', JSON.stringify(txns)); }
 
 // ─── Derived stats ────────────────────────────────────────────────────────────
 function netProfit(b) {
-  // Bonus bets cost nothing — profit is just the payout received
   if (b.status === 'Pending') return null;
   if (b.status === 'Push') return 0;
-  if (b.bonus) return b.payout;
-  return b.payout - b.wager;
-}
-
-function hypotheticalProfit(b) {
-  // As-if-real: always payout - wager
-  if (b.status === 'Pending') return null;
-  if (b.status === 'Push') return 0;
+  if (b.bonus) return b.status === 'Won' ? b.payout : -b.wager;
   return b.payout - b.wager;
 }
 
@@ -380,7 +366,7 @@ function computeStats() {
   const totalProfit    = realNetProfit + bonusNetProfit;
 
   // Hypothetical P&L: treats every bet as real money (for performance benchmarking)
-  const hypTotalProfit = settled.reduce((s,b)=>s+(hypotheticalProfit(b)||0),0);
+  const hypTotalProfit = settled.reduce((s,b)=>s+(netProfit(b)||0),0);
 
   const totalInvested = REAL_MONEY_INPUT + (TOTAL_BONUS - BONUS_REMAINING);
   const roi    = (totalProfit    / totalInvested * 100).toFixed(1);
@@ -539,11 +525,9 @@ function render() {
     html += `<tr><td colspan="10" class="section-header">${date}</td></tr>`;
     for (const b of rows) {
       const np = netProfit(b);
-      const hyp = hypotheticalProfit(b);
-      const showHyp = b.bonus && hyp !== null;
       const npStr = np === null ? '—' : fmtMoney(np);
       const npClass = np === null ? '' : np >= 0 ? 'pos' : 'neg';
-      const hypStr = showHyp ? `<span style="color:${hyp>=0?'#4ade8088':'#f8717188'};font-size:0.72rem;margin-left:4px">(${fmtMoney(hyp)} real)</span>` : '';
+      const hypStr = '';
       const odds = americanOdds(b);
       let chanceHtml = '—';
       if (odds !== null) {
@@ -779,7 +763,7 @@ document.getElementById('modalOverlay').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeModal();
 });
 
-render();
+loadData();
 </script>
 </body>
 </html>
