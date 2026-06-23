@@ -533,7 +533,7 @@ function render() {
     for (const b of rows) {
       const np = netProfit(b);
       const hyp = hypotheticalProfit(b);
-      const showHyp = b.bonus && hyp !== null && hyp !== np;
+      const showHyp = b.bonus && hyp !== null;
       const npStr = np === null ? '—' : fmtMoney(np);
       const npClass = np === null ? '' : np >= 0 ? 'pos' : 'neg';
       const hypStr = showHyp ? `<span style="color:${hyp>=0?'#4ade8088':'#f8717188'};font-size:0.72rem;margin-left:4px">(${fmtMoney(hyp)} real)</span>` : '';
