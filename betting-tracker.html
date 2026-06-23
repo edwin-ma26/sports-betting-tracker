@@ -490,12 +490,15 @@ function render() {
   let siteHtml = Object.entries(stats.bysite).map(([site, s]) => {
     const balClass = s.balance >= 0 ? 'balance-pos' : 'balance-neg';
     const hasDeposit = txns.some(t => t.site === site && t.type === 'deposit');
-    const balNote = hasDeposit ? `Est. balance: <span class="balance-pill ${balClass}">${fmtMoney(s.balance)}</span>${s.withdrawn > 0 ? ` · withdrew ${fmtMoney(s.withdrawn)}` : ''}` : `<span style="color:#f59e0b;font-size:0.7rem">Add a deposit to see est. balance</span>`;
+    const balValue = hasDeposit ? fmtMoney(s.balance) : '—';
+    const balColor = s.balance >= 0 ? 'green' : 'red';
+    const withdrawnNote = s.withdrawn > 0 ? ` · withdrew ${fmtMoney(s.withdrawn)}` : '';
+    const noDepositNote = !hasDeposit ? `<div class="sub" style="color:#f59e0b">Add a deposit to see balance</div>` : '';
     return `<div class="stat-card" style="border-left: 3px solid ${siteColors[site] || '#64748b'}">
-      <div class="label">${site}</div>
-      <div class="value ${s.pnl >= 0 ? 'green' : 'red'}">${fmtMoney(s.pnl)} P&amp;L</div>
-      <div class="sub">${s.won}–${s.total - s.won} (${s.total ? (s.won/s.total*100).toFixed(0) : 0}% win)</div>
-      <div class="sub" style="margin-top:6px">${balNote}</div>
+      <div class="label">${site} — Est. Balance</div>
+      <div class="value ${balColor}">${balValue}</div>
+      <div class="sub"><span style="color:${s.pnl>=0?'#22c55e':'#ef4444'};font-weight:600">${fmtMoney(s.pnl)} P&amp;L</span> · ${s.won}–${s.total - s.won} (${s.total ? (s.won/s.total*100).toFixed(0) : 0}% win)${withdrawnNote}</div>
+      ${noDepositNote}
     </div>`;
   }).join('');
   document.getElementById('siteGrid').innerHTML = siteHtml;
