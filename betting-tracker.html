@@ -289,6 +289,13 @@
 <script>
 // ─── Data ────────────────────────────────────────────────────────────────────
 // bonus: true = this wager was a bonus bet (doesn't count as real money spent)
+const DATA_VERSION = 2;
+if (parseInt(localStorage.getItem('dataVersion') || '0') < DATA_VERSION) {
+  localStorage.removeItem('bets');
+  localStorage.removeItem('txns');
+  localStorage.setItem('dataVersion', DATA_VERSION);
+}
+
 let bets = JSON.parse(localStorage.getItem('bets') || 'null') || [
   { id:1, date:'2026-06-21', site:'FanDuel',    event:'France vs Iraq',        betType:'France to win',                    wager:5.00,  payout:5.33,  status:'Won',  bonus:false, chance:0 },
   { id:2, date:'2026-06-21', site:'DraftKings', event:'Egypt vs New Zealand',   betType:'2-0 correct score',                wager:5.00,  payout:0.00,  status:'Lost', bonus:false, chance:0 },
