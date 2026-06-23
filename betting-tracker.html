@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Beginner Sports Betting Tracker</title>
+<title>Sports Betting Tracker</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
@@ -12,10 +12,9 @@
   header h1 { font-size: 1.5rem; font-weight: 700; color: #fff; }
   header span { font-size: 0.85rem; color: #64748b; }
 
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; padding: 24px 32px 0; }
+  .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; padding: 24px 32px 0; }
   .stat-card { background: #1a1f2e; border: 1px solid #2d3748; border-radius: 10px; padding: 18px 20px; }
   .stat-card .label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
-  #statsGrid .stat-card .label { min-height: 2.2em; display: flex; align-items: flex-end; }
   .stat-card .value { font-size: 1.5rem; font-weight: 700; }
   .stat-card .value.green { color: #22c55e; }
   .stat-card .value.red { color: #ef4444; }
@@ -97,7 +96,7 @@
 
 <header>
   <div>
-    <h1>⚽ Beginner Sports Betting Tracker</h1>
+    <h1>⚽ Sports Betting Tracker</h1>
     <span>2026 FIFA World Cup &amp; more</span>
   </div>
   <button id="undoBtn" onclick="undo()" disabled style="margin-left:auto;background:#1e2535;border:1px solid #2d3748;color:#94a3b8;border-radius:8px;padding:8px 16px;font-size:0.85rem;cursor:pointer;transition:all 0.15s" onmouseover="if(!this.disabled)this.style.background='#2d3748'" onmouseout="this.style.background='#1e2535'">↩ Undo</button>
@@ -357,11 +356,6 @@ function netProfit(b) {
   return b.payout - b.wager;
 }
 
-function hypotheticalProfit(b) {
-  if (b.status === 'Pending') return null;
-  if (b.status === 'Push') return 0;
-  return b.payout - b.wager;
-}
 
 function americanOdds(b) {
   // manual override stored as American odds (e.g. 150 or -200)
@@ -396,14 +390,9 @@ function computeStats() {
   const bonusNetProfit = settled.filter(b=> b.bonus).reduce((s,b)=>s+(netProfit(b)||0),0);
   const totalProfit    = realNetProfit + bonusNetProfit;
 
-  // Hypothetical P&L: treats every bet as real money (for performance benchmarking)
-  const hypTotalProfit = settled.reduce((s,b)=>s+(hypotheticalProfit(b)||0),0);
-
   const totalInvested = REAL_MONEY_INPUT + (TOTAL_BONUS - BONUS_REMAINING);
-  const roi    = (totalProfit    / totalInvested * 100).toFixed(1);
-  const hypRoi = (hypTotalProfit / totalInvested * 100).toFixed(1);
-
   const totalWagered = settled.reduce((s,b) => s + b.wager, 0);
+  const roi = totalWagered > 0 ? (totalProfit / totalWagered * 100).toFixed(1) : '0.0';
 
   // Average odds across all settled bets
   const oddsArr = settled.map(b => americanOdds(b)).filter(o => o !== null);
@@ -432,7 +421,7 @@ function computeStats() {
     bysite[site] = { pnl, won: sw, total: sb.length, balance, withdrawn };
   }
 
-  return { won, totalBets, winRate, realNetProfit, bonusNetProfit, totalProfit, hypTotalProfit, realWagered, bonusWagered, roi, hypRoi, totalInvested, totalWagered, avgOdds, biggestWin, biggestLoss, bysite };
+  return { won, totalBets, winRate, realNetProfit, bonusNetProfit, totalProfit, realWagered, bonusWagered, roi, totalInvested, totalWagered, avgOdds, biggestWin, biggestLoss, bysite };
 }
 
 // ─── Render ───────────────────────────────────────────────────────────────────
@@ -475,14 +464,9 @@ function render() {
       <div class="sub">Real cash + bonus winnings</div>
     </div>
     <div class="stat-card">
-      <div class="label">Hypothetical P&L</div>
-      <div class="value ${stats.hypTotalProfit >= 0 ? 'green':'red'}">${fmtMoney(stats.hypTotalProfit)}</div>
-      <div class="sub">If all bets were real money</div>
-    </div>
-    <div class="stat-card">
-      <div class="label">ROI (if real)</div>
-      <div class="value ${parseFloat(stats.hypRoi) >= 0 ? 'green':'red'}">${stats.hypRoi}%</div>
-      <div class="sub">Actual: <span style="color:${parseFloat(stats.roi)>=0?'#22c55e':'#ef4444'};font-weight:600">${stats.roi}%</span></div>
+      <div class="label">ROI</div>
+      <div class="value ${parseFloat(stats.roi) >= 0 ? 'green':'red'}">${stats.roi}%</div>
+      <div class="sub">Return on real money in</div>
     </div>
     <div class="stat-card">
       <div class="label">Units Wagered</div>

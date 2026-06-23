@@ -1,26 +1,245 @@
 {
   "bets": [
-    { "id": 1,  "date": "2026-06-21", "site": "FanDuel",    "event": "France vs Iraq",        "betType": "France to win",                                                          "wager": 5.00,  "payout": 5.33,  "status": "Won",  "bonus": false, "chance": 0 },
-    { "id": 2,  "date": "2026-06-21", "site": "DraftKings", "event": "Egypt vs New Zealand",  "betType": "2-0 correct score",                                                      "wager": 5.00,  "payout": 0.00,  "status": "Lost", "bonus": false, "chance": 0 },
-    { "id": 3,  "date": "2026-06-21", "site": "DraftKings", "event": "Argentina vs Austria",  "betType": "Argentina to win",                                                       "wager": 25.00, "payout": 37.50, "status": "Won",  "bonus": true,  "chance": 0 },
-    { "id": 4,  "date": "2026-06-21", "site": "Kalshi",     "event": "Egypt vs New Zealand",  "betType": "Egypt to win",                                                           "wager": 10.00, "payout": 37.15, "status": "Won",  "bonus": false, "chance": 0 },
-    { "id": 5,  "date": "2026-06-21", "site": "Kalshi",     "event": "Argentina vs Austria",  "betType": "Argentina to win",                                                       "wager": 37.15, "payout": 54.21, "status": "Won",  "bonus": false, "chance": 0 },
-    { "id": 6,  "date": "2026-06-21", "site": "Kalshi",     "event": "Argentina vs Austria",  "betType": "Argentina to win with over 1.5 goals",                                   "wager": 15.00, "payout": 32.80, "status": "Won",  "bonus": false, "chance": 0 },
-    { "id": 7,  "date": "2026-06-22", "site": "FanDuel",    "event": "Norway vs Senegal",     "betType": "Norway to win",                                                          "wager": 50.00, "payout": 125.00,"status": "Won",  "bonus": true,  "chance": 0 },
-    { "id": 8,  "date": "2026-06-22", "site": "FanDuel",    "event": "France vs Iraq",        "betType": "Mbappe to have 1+ shots on target",                                      "wager": 5.00,  "payout": 5.20,  "status": "Won",  "bonus": false, "chance": 0 },
-    { "id": 9,  "date": "2026-06-22", "site": "DraftKings", "event": "Norway vs Senegal",     "betType": "Senegal to win",                                                         "wager": 25.00, "payout": 0.00,  "status": "Lost", "bonus": true,  "chance": 0 },
-    { "id": 10, "date": "2026-06-22", "site": "DraftKings", "event": "Norway vs Senegal",     "betType": "5 pick parlay",                                                          "wager": 25.00, "payout": 0.00,  "status": "Lost", "bonus": true,  "chance": 0 },
-    { "id": 11, "date": "2026-06-22", "site": "Kalshi",     "event": "France vs Iraq",        "betType": "France to win",                                                          "wager": 38.48, "payout": 41.18, "status": "Won",  "bonus": false, "chance": 0 },
-    { "id": 12, "date": "2026-06-22", "site": "Kalshi",     "event": "France vs Iraq",        "betType": "France 10+ corners",                                                     "wager": 48.51, "payout": 2.99,  "status": "Lost", "bonus": false, "chance": 0 },
-    { "id": 13, "date": "2026-06-22", "site": "Kalshi",     "event": "France vs Iraq",        "betType": "Tie",                                                                    "wager": 19.99, "payout": 2.95,  "status": "Lost", "bonus": false, "chance": 0 },
-    { "id": 14, "date": "2026-06-22", "site": "Kalshi",     "event": "Jordan vs Algeria",     "betType": "Algeria to win",                                                         "wager": 19.78, "payout": 35.92, "status": "Won",  "bonus": false, "chance": 0 },
-    { "id": 15, "date": "2026-06-23", "site": "DraftKings", "event": "Jordan vs Algeria",     "betType": "SGP 2-pick parlay (Gouiri anytime goalscorer + Over 9.5 corners)",       "wager": 2.00,  "payout": 34.00, "status": "Won",  "bonus": false, "chance": 1600 }
+    {
+      "id": 1,
+      "date": "2026-06-21",
+      "site": "FanDuel",
+      "event": "France vs Iraq",
+      "betType": "France to win",
+      "wager": 5,
+      "payout": 5.33,
+      "status": "Won",
+      "bonus": false,
+      "chance": 0
+    },
+    {
+      "id": 2,
+      "date": "2026-06-21",
+      "site": "DraftKings",
+      "event": "Egypt vs New Zealand",
+      "betType": "2-0 correct score",
+      "wager": 5,
+      "payout": 0,
+      "status": "Lost",
+      "bonus": false,
+      "chance": 0
+    },
+    {
+      "id": 3,
+      "date": "2026-06-21",
+      "site": "DraftKings",
+      "event": "Argentina vs Austria",
+      "betType": "Argentina to win",
+      "wager": 25,
+      "payout": 12.5,
+      "status": "Won",
+      "bonus": true,
+      "chance": 0
+    },
+    {
+      "id": 4,
+      "date": "2026-06-21",
+      "site": "Kalshi",
+      "event": "Egypt vs New Zealand",
+      "betType": "Egypt to win",
+      "wager": 10,
+      "payout": 37.15,
+      "status": "Won",
+      "bonus": false,
+      "chance": 0
+    },
+    {
+      "id": 5,
+      "date": "2026-06-21",
+      "site": "Kalshi",
+      "event": "Argentina vs Austria",
+      "betType": "Argentina to win",
+      "wager": 37.15,
+      "payout": 54.21,
+      "status": "Won",
+      "bonus": false,
+      "chance": 0
+    },
+    {
+      "id": 6,
+      "date": "2026-06-21",
+      "site": "Kalshi",
+      "event": "Argentina vs Austria",
+      "betType": "Argentina to win with over 1.5 goals",
+      "wager": 15,
+      "payout": 32.8,
+      "status": "Won",
+      "bonus": false,
+      "chance": 0
+    },
+    {
+      "id": 7,
+      "date": "2026-06-22",
+      "site": "FanDuel",
+      "event": "Norway vs Senegal",
+      "betType": "Norway to win",
+      "wager": 50,
+      "payout": 125,
+      "status": "Won",
+      "bonus": true,
+      "chance": 0
+    },
+    {
+      "id": 8,
+      "date": "2026-06-22",
+      "site": "FanDuel",
+      "event": "France vs Iraq",
+      "betType": "Mbappe to have 1+ shots on target",
+      "wager": 5,
+      "payout": 5.2,
+      "status": "Won",
+      "bonus": false,
+      "chance": 0
+    },
+    {
+      "id": 9,
+      "date": "2026-06-22",
+      "site": "DraftKings",
+      "event": "Norway vs Senegal",
+      "betType": "Senegal to win",
+      "wager": 25,
+      "payout": 0,
+      "status": "Lost",
+      "bonus": true,
+      "chance": 0
+    },
+    {
+      "id": 10,
+      "date": "2026-06-22",
+      "site": "DraftKings",
+      "event": "Norway vs Senegal",
+      "betType": "5 pick parlay",
+      "wager": 25,
+      "payout": 0,
+      "status": "Lost",
+      "bonus": true,
+      "chance": 0
+    },
+    {
+      "id": 11,
+      "date": "2026-06-22",
+      "site": "Kalshi",
+      "event": "France vs Iraq",
+      "betType": "France to win",
+      "wager": 38.48,
+      "payout": 41.18,
+      "status": "Won",
+      "bonus": false,
+      "chance": 0
+    },
+    {
+      "id": 12,
+      "date": "2026-06-22",
+      "site": "Kalshi",
+      "event": "France vs Iraq",
+      "betType": "France 10+ corners",
+      "wager": 48.51,
+      "payout": 2.99,
+      "status": "Lost",
+      "bonus": false,
+      "chance": 0
+    },
+    {
+      "id": 13,
+      "date": "2026-06-22",
+      "site": "Kalshi",
+      "event": "France vs Iraq",
+      "betType": "Tie",
+      "wager": 19.99,
+      "payout": 2.95,
+      "status": "Lost",
+      "bonus": false,
+      "chance": 0
+    },
+    {
+      "id": 14,
+      "date": "2026-06-22",
+      "site": "Kalshi",
+      "event": "Jordan vs Algeria",
+      "betType": "Algeria to win",
+      "wager": 19.78,
+      "payout": 35.92,
+      "status": "Won",
+      "bonus": false,
+      "chance": 0
+    },
+    {
+      "id": 15,
+      "date": "2026-06-23",
+      "site": "DraftKings",
+      "event": "Jordan vs Algeria",
+      "betType": "SGP 2-pick parlay (Gouiri anytime goalscorer + Over 9.5 corners)",
+      "wager": 2,
+      "payout": 34,
+      "status": "Won",
+      "bonus": false,
+      "chance": 1600
+    },
+    {
+      "id": 16,
+      "date": "2026-06-23",
+      "site": "DraftKings",
+      "event": "Portugal vs Uzbekistan",
+      "betType": "Portugal Win (Live Moneyline 30:00-39:59)",
+      "wager": 45.50,
+      "payout": 170.62,
+      "status": "Won",
+      "bonus": false,
+      "chance": 275
+    },
+    {
+      "id": 17,
+      "date": "2026-06-23",
+      "site": "DraftKings",
+      "event": "Portugal vs Uzbekistan",
+      "betType": "Portugal Win (Live Moneyline 30:00-39:59)",
+      "wager": 25,
+      "payout": 68.75,
+      "status": "Won",
+      "bonus": true,
+      "chance": 275
+    }
   ],
   "txns": [
-    { "id": 1, "date": "2026-06-21", "site": "FanDuel",    "type": "deposit",    "amount": 5.00  },
-    { "id": 2, "date": "2026-06-21", "site": "DraftKings", "type": "deposit",    "amount": 5.00  },
-    { "id": 3, "date": "2026-06-21", "site": "Kalshi",     "type": "deposit",    "amount": 10.00 },
-    { "id": 4, "date": "2026-06-21", "site": "Kalshi",     "type": "bonus",      "amount": 15.00 },
-    { "id": 5, "date": "2026-06-22", "site": "FanDuel",    "type": "withdrawal", "amount": 0.00  }
+    {
+      "id": 1,
+      "date": "2026-06-21",
+      "site": "FanDuel",
+      "type": "deposit",
+      "amount": 5
+    },
+    {
+      "id": 2,
+      "date": "2026-06-21",
+      "site": "DraftKings",
+      "type": "deposit",
+      "amount": 5
+    },
+    {
+      "id": 3,
+      "date": "2026-06-21",
+      "site": "Kalshi",
+      "type": "deposit",
+      "amount": 10
+    },
+    {
+      "id": 4,
+      "date": "2026-06-21",
+      "site": "Kalshi",
+      "type": "bonus",
+      "amount": 15
+    },
+    {
+      "id": 5,
+      "date": "2026-06-22",
+      "site": "FanDuel",
+      "type": "withdrawal",
+      "amount": 65.27
+    }
   ]
 }
