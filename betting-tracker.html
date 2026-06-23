@@ -323,6 +323,15 @@ function saveTxns() { localStorage.setItem('txns', JSON.stringify(txns)); }
 
 // ─── Derived stats ────────────────────────────────────────────────────────────
 function netProfit(b) {
+  // Real P&L: bonus losses cost $0, wins still earn payout - wager
+  if (b.status === 'Pending') return null;
+  if (b.status === 'Push') return 0;
+  if (b.bonus && b.status === 'Lost') return 0;
+  return b.payout - b.wager;
+}
+
+function hypotheticalProfit(b) {
+  // As-if-real: always payout - wager
   if (b.status === 'Pending') return null;
   if (b.status === 'Push') return 0;
   return b.payout - b.wager;
@@ -356,26 +365,27 @@ function computeStats() {
   // Bonus wagered
   const bonusWagered = settled.filter(b=>b.bonus).reduce((s,b)=>s+b.wager,0);
 
-  // Net profit on real money bets
-  const realNetProfit = settled.filter(b=>!b.bonus).reduce((s,b)=>s+(netProfit(b)||0),0);
-  // Net winnings from bonus bets (only count payout - wager when won)
-  const bonusNetProfit = settled.filter(b=>b.bonus).reduce((s,b)=>s+(netProfit(b)||0),0);
+  // Real P&L: real bets only (payout - wager); bonus losses = $0, bonus wins = payout - wager
+  const realNetProfit  = settled.filter(b=>!b.bonus).reduce((s,b)=>s+(netProfit(b)||0),0);
+  const bonusNetProfit = settled.filter(b=> b.bonus).reduce((s,b)=>s+(netProfit(b)||0),0);
+  const totalProfit    = realNetProfit + bonusNetProfit;
 
-  // Total cash in hand = real_money_input + realNetProfit + bonusNetProfit
-  // We started with $25 real and used $140 bonus
-  // ROI = (realNetProfit + bonusNetProfit) / REAL_MONEY_INPUT * 100
-  const totalProfit = realNetProfit + bonusNetProfit;
+  // Hypothetical P&L: treats every bet as real money (for performance benchmarking)
+  const hypTotalProfit = settled.reduce((s,b)=>s+(hypotheticalProfit(b)||0),0);
+
   const totalInvested = REAL_MONEY_INPUT + (TOTAL_BONUS - BONUS_REMAINING);
-  const roi = (totalProfit / totalInvested * 100).toFixed(1);
+  const roi    = (totalProfit    / totalInvested * 100).toFixed(1);
+  const hypRoi = (hypTotalProfit / totalInvested * 100).toFixed(1);
+
   const totalWagered = settled.reduce((s,b) => s + b.wager, 0);
 
-  // Average odds (American) across settled bets with calculable odds
+  // Average odds across all settled bets
   const oddsArr = settled.map(b => americanOdds(b)).filter(o => o !== null);
-  const avgOdds = oddsArr.length ? Math.round(oddsArr.reduce((s,o) => s+o, 0) / oddsArr.length) : null;
+  const avgOdds = oddsArr.length ? Math.round(oddsArr.reduce((s,o)=>s+o,0) / oddsArr.length) : null;
 
-  // Biggest win / loss
+  // Biggest win / loss (real P&L)
   const profits = settled.map(b => netProfit(b) || 0);
-  const biggestWin = profits.length ? Math.max(...profits) : 0;
+  const biggestWin  = profits.length ? Math.max(...profits) : 0;
   const biggestLoss = profits.length ? Math.min(...profits) : 0;
 
   // P&L by site
@@ -396,7 +406,7 @@ function computeStats() {
     bysite[site] = { pnl, won: sw, total: sb.length, balance, withdrawn };
   }
 
-  return { won, totalBets, winRate, realNetProfit, bonusNetProfit, totalProfit, realWagered, bonusWagered, roi, totalInvested, totalWagered, avgOdds, biggestWin, biggestLoss, bysite };
+  return { won, totalBets, winRate, realNetProfit, bonusNetProfit, totalProfit, hypTotalProfit, realWagered, bonusWagered, roi, hypRoi, totalInvested, totalWagered, avgOdds, biggestWin, biggestLoss, bysite };
 }
 
 // ─── Render ───────────────────────────────────────────────────────────────────
@@ -446,12 +456,12 @@ function render() {
     <div class="stat-card">
       <div class="label">Total P&L</div>
       <div class="value ${stats.totalProfit >= 0 ? 'green':'red'}">${fmtMoney(stats.totalProfit)}</div>
-      <div class="sub">vs $${REAL_MONEY_INPUT} in</div>
+      <div class="sub" style="margin-top:4px">If real: <span style="color:${stats.hypTotalProfit>=0?'#22c55e':'#ef4444'};font-weight:600">${fmtMoney(stats.hypTotalProfit)}</span></div>
     </div>
     <div class="stat-card">
       <div class="label">ROI</div>
       <div class="value ${parseFloat(stats.roi) >= 0 ? 'green':'red'}">${stats.roi}%</div>
-      <div class="sub">vs $${stats.totalInvested.toFixed(2)} in (cash + bonus)</div>
+      <div class="sub">If real: <span style="color:${parseFloat(stats.hypRoi)>=0?'#22c55e':'#ef4444'};font-weight:600">${stats.hypRoi}%</span></div>
     </div>
     <div class="stat-card">
       <div class="label">Units Wagered</div>
@@ -522,8 +532,11 @@ function render() {
     html += `<tr><td colspan="10" class="section-header">${date}</td></tr>`;
     for (const b of rows) {
       const np = netProfit(b);
+      const hyp = hypotheticalProfit(b);
+      const showHyp = b.bonus && hyp !== null && hyp !== np;
       const npStr = np === null ? '—' : fmtMoney(np);
       const npClass = np === null ? '' : np >= 0 ? 'pos' : 'neg';
+      const hypStr = showHyp ? `<span style="color:${hyp>=0?'#4ade8088':'#f8717188'};font-size:0.72rem;margin-left:4px">(${fmtMoney(hyp)} real)</span>` : '';
       const odds = americanOdds(b);
       let chanceHtml = '—';
       if (odds !== null) {
@@ -544,7 +557,7 @@ function render() {
         <td class="wager-cell">$${b.wager.toFixed(2)}${b.bonus ? '<span class="wager-bonus">bonus bet</span>' : ''}</td>
         <td>$${b.payout.toFixed(2)}</td>
         <td><span class="badge ${b.status.toLowerCase()}">${b.status}</span></td>
-        <td class="profit ${npClass}">${npStr}</td>
+        <td class="profit ${npClass}">${npStr}${hypStr}</td>
         <td>${chanceHtml}</td>
         <td style="white-space:nowrap">
           <button class="edit-btn" onclick="editBet(${b.id})" title="Edit">✎</button>
