@@ -120,7 +120,6 @@
         <th>Site</th>
         <th>Type</th>
         <th>Amount</th>
-        <th>Note</th>
         <th></th>
       </tr>
     </thead>
@@ -161,7 +160,7 @@
       </div>
       <div class="form-group">
         <label>Site</label>
-        <select id="t-site">
+        <select id="t-site" onchange="updateTxnAmountUI()">
           <option>FanDuel</option>
           <option>DraftKings</option>
           <option>Kalshi</option>
@@ -169,24 +168,42 @@
         </select>
       </div>
     </div>
-    <div class="form-row">
+    <div class="form-row full">
       <div class="form-group">
         <label>Type</label>
-        <select id="t-type">
+        <select id="t-type" onchange="updateTxnAmountUI()">
           <option value="deposit">Deposit</option>
           <option value="withdrawal">Withdrawal</option>
           <option value="bonus">Bonus Credit</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>Amount ($)</label>
-        <input type="number" id="t-amount" min="0" step="0.01" placeholder="0.00" />
+    </div>
+    <!-- Withdrawal: percentage mode -->
+    <div id="t-pct-row" style="display:none">
+      <div class="form-row" style="align-items:flex-end">
+        <div class="form-group">
+          <label>Withdraw %</label>
+          <input type="number" id="t-pct" min="1" max="100" step="1" placeholder="e.g. 50" oninput="updatePctPreview()" />
+        </div>
+        <div class="form-group">
+          <label>= Amount</label>
+          <div id="t-pct-preview" style="padding:8px 10px;background:#0f1117;border:1px solid #2d3748;border-radius:6px;font-size:0.85rem;color:#4ade80;font-weight:600">—</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-bottom:10px">
+        <button type="button" onclick="switchToCustom()" style="background:none;border:none;color:#64748b;font-size:0.78rem;cursor:pointer;text-decoration:underline">or enter custom amount instead</button>
       </div>
     </div>
-    <div class="form-row full">
-      <div class="form-group">
-        <label>Note (optional)</label>
-        <input type="text" id="t-note" placeholder="e.g. Welcome bonus" />
+    <!-- Custom amount (default for deposit/bonus, optional for withdrawal) -->
+    <div id="t-custom-row">
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Amount ($)</label>
+          <input type="number" id="t-amount" min="0" step="0.01" placeholder="0.00" />
+        </div>
+      </div>
+      <div id="t-custom-back" style="display:none;text-align:center;margin-bottom:10px">
+        <button type="button" onclick="switchToPct()" style="background:none;border:none;color:#64748b;font-size:0.78rem;cursor:pointer;text-decoration:underline">or use % of balance instead</button>
       </div>
     </div>
     <div class="modal-actions">
@@ -290,10 +307,10 @@ let nextId = Math.max(...bets.map(b=>b.id)) + 1;
 
 // Transactions: deposits, withdrawals, bonus credits per site
 let txns = JSON.parse(localStorage.getItem('txns') || 'null') || [
-  { id:1, date:'2026-06-21', site:'FanDuel',    type:'deposit',    amount:5.00,  note:'Initial deposit' },
-  { id:2, date:'2026-06-21', site:'DraftKings', type:'deposit',    amount:5.00,  note:'Initial deposit' },
-  { id:3, date:'2026-06-21', site:'Kalshi',     type:'deposit',    amount:10.00, note:'Initial deposit' },
-  { id:4, date:'2026-06-22', site:'FanDuel',    type:'withdrawal', amount:0,     note:'Withdrew half of FanDuel balance — update amount' },
+  { id:1, date:'2026-06-21', site:'FanDuel',    type:'deposit',    amount:5.00  },
+  { id:2, date:'2026-06-21', site:'DraftKings', type:'deposit',    amount:5.00  },
+  { id:3, date:'2026-06-21', site:'Kalshi',     type:'deposit',    amount:10.00 },
+  { id:4, date:'2026-06-22', site:'FanDuel',    type:'withdrawal', amount:0     },
 ];
 let nextTxnId = Math.max(...txns.map(t=>t.id)) + 1;
 
@@ -481,12 +498,11 @@ function render() {
       <td><span class="site-badge ${siteClass(t.site)}">${t.site}</span></td>
       <td><span class="txn-type txn-${t.type}">${t.type.charAt(0).toUpperCase()+t.type.slice(1)}</span></td>
       <td class="${t.type==='withdrawal'?'profit neg':'profit pos'}">${t.type==='withdrawal'?'-':'+'} $${t.amount.toFixed(2)}</td>
-      <td style="color:#64748b;font-size:0.8rem">${t.note||'—'}</td>
       <td style="white-space:nowrap">
         <button class="edit-btn" onclick="editTxn(${t.id})" title="Edit">✎</button>
         <button class="delete-btn" onclick="deleteTxn(${t.id})" title="Delete">✕</button>
       </td>
-    </tr>`).join('') : `<tr><td colspan="6" style="color:#475569;padding:16px 14px;font-size:0.85rem">No transactions yet — add deposits to see expected balances.</td></tr>`;
+    </tr>`).join('') : `<tr><td colspan="5" style="color:#475569;padding:16px 14px;font-size:0.85rem">No transactions yet — add deposits to see expected balances.</td></tr>`;
 
   document.getElementById('roiExplainer').innerHTML = `
     <strong>ROI note:</strong> You put in <strong>$${REAL_MONEY_INPUT}</strong> real cash and have used <strong>$${(TOTAL_BONUS - BONUS_REMAINING).toFixed(2)}</strong> of $${TOTAL_BONUS} in bonus bets ($${BONUS_REMAINING} remaining).
@@ -549,15 +565,64 @@ function deleteBet(id) {
 
 // ─── Transaction Modal ────────────────────────────────────────────────────────
 let editingTxnId = null;
+let txnUseCustom = false;
+
+function getSiteBalance(site) {
+  const settled = bets.filter(b => b.status !== 'Pending' && b.site === site);
+  const siteTxns = txns.filter(t => t.site === site && t.id !== editingTxnId);
+  const deposits  = siteTxns.filter(t=>t.type==='deposit').reduce((s,t)=>s+t.amount,0);
+  const bonusCr   = siteTxns.filter(t=>t.type==='bonus').reduce((s,t)=>s+t.amount,0);
+  const withdrawn = siteTxns.filter(t=>t.type==='withdrawal').reduce((s,t)=>s+t.amount,0);
+  const realOut   = settled.filter(b=>!b.bonus).reduce((s,b)=>s+b.wager,0);
+  const payouts   = settled.reduce((s,b)=>s+b.payout,0);
+  return deposits + bonusCr - withdrawn - realOut + payouts;
+}
+
+function updateTxnAmountUI() {
+  const type = document.getElementById('t-type').value;
+  const isWithdrawal = type === 'withdrawal';
+  txnUseCustom = !isWithdrawal;
+  document.getElementById('t-pct-row').style.display    = isWithdrawal && !txnUseCustom ? '' : 'none';
+  document.getElementById('t-custom-row').style.display = txnUseCustom ? '' : 'none';
+  document.getElementById('t-custom-back').style.display = isWithdrawal && txnUseCustom ? '' : 'none';
+  if (isWithdrawal && !txnUseCustom) updatePctPreview();
+}
+
+function updatePctPreview() {
+  const site = document.getElementById('t-site').value;
+  const pct  = parseFloat(document.getElementById('t-pct').value) || 0;
+  const bal  = getSiteBalance(site);
+  const amt  = bal * (pct / 100);
+  document.getElementById('t-pct-preview').textContent = amt > 0 ? `$${amt.toFixed(2)}` : '—';
+}
+
+function switchToCustom() {
+  txnUseCustom = true;
+  document.getElementById('t-pct-row').style.display    = 'none';
+  document.getElementById('t-custom-row').style.display = '';
+  document.getElementById('t-custom-back').style.display = '';
+  document.getElementById('t-amount').value = '';
+}
+
+function switchToPct() {
+  txnUseCustom = false;
+  document.getElementById('t-pct-row').style.display    = '';
+  document.getElementById('t-custom-row').style.display = 'none';
+  document.getElementById('t-custom-back').style.display = 'none';
+  document.getElementById('t-pct').value = '';
+  updatePctPreview();
+}
 
 function openTxnModal() {
   editingTxnId = null;
+  txnUseCustom = false;
   document.getElementById('txnModalTitle').textContent = 'Add Transaction';
   document.getElementById('t-date').value = new Date().toISOString().slice(0,10);
   document.getElementById('t-site').value = 'FanDuel';
   document.getElementById('t-type').value = 'deposit';
   document.getElementById('t-amount').value = '';
-  document.getElementById('t-note').value = '';
+  document.getElementById('t-pct').value = '';
+  updateTxnAmountUI();
   document.getElementById('txnModalOverlay').classList.add('open');
 }
 
@@ -565,12 +630,21 @@ function editTxn(id) {
   const t = txns.find(x => x.id === id);
   if (!t) return;
   editingTxnId = id;
+  txnUseCustom = true;
   document.getElementById('txnModalTitle').textContent = 'Edit Transaction';
-  document.getElementById('t-date').value = t.date;
-  document.getElementById('t-site').value = t.site;
-  document.getElementById('t-type').value = t.type;
+  document.getElementById('t-date').value   = t.date;
+  document.getElementById('t-site').value   = t.site;
+  document.getElementById('t-type').value   = t.type;
   document.getElementById('t-amount').value = t.amount;
-  document.getElementById('t-note').value = t.note || '';
+  document.getElementById('t-pct').value    = '';
+  updateTxnAmountUI();
+  // For withdrawals in edit mode, force custom so the saved value is visible
+  if (t.type === 'withdrawal') {
+    txnUseCustom = true;
+    document.getElementById('t-pct-row').style.display    = 'none';
+    document.getElementById('t-custom-row').style.display = '';
+    document.getElementById('t-custom-back').style.display = '';
+  }
   document.getElementById('txnModalOverlay').classList.add('open');
 }
 
@@ -580,14 +654,22 @@ function closeTxnModal() {
 }
 
 function saveTxn() {
-  const amount = parseFloat(document.getElementById('t-amount').value) || 0;
-  if (!amount) { alert('Enter an amount.'); return; }
+  const type = document.getElementById('t-type').value;
+  let amount;
+  if (type === 'withdrawal' && !txnUseCustom) {
+    const site = document.getElementById('t-site').value;
+    const pct  = parseFloat(document.getElementById('t-pct').value) || 0;
+    if (!pct) { alert('Enter a percentage.'); return; }
+    amount = getSiteBalance(site) * (pct / 100);
+  } else {
+    amount = parseFloat(document.getElementById('t-amount').value) || 0;
+    if (!amount) { alert('Enter an amount.'); return; }
+  }
   const fields = {
     date:   document.getElementById('t-date').value,
     site:   document.getElementById('t-site').value,
-    type:   document.getElementById('t-type').value,
-    amount,
-    note:   document.getElementById('t-note').value.trim(),
+    type,
+    amount: parseFloat(amount.toFixed(2)),
   };
   if (editingTxnId !== null) {
     txns = txns.map(t => t.id === editingTxnId ? { ...t, ...fields } : t);
