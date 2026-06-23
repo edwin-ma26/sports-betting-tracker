@@ -100,6 +100,7 @@
     <h1>⚽ Beginner Sports Betting Tracker</h1>
     <span>2026 FIFA World Cup &amp; more</span>
   </div>
+  <button id="undoBtn" onclick="undo()" disabled style="margin-left:auto;background:#1e2535;border:1px solid #2d3748;color:#94a3b8;border-radius:8px;padding:8px 16px;font-size:0.85rem;cursor:pointer;transition:all 0.15s" onmouseover="if(!this.disabled)this.style.background='#2d3748'" onmouseout="this.style.background='#1e2535'">↩ Undo</button>
 </header>
 
 <div class="stats-grid" id="statsGrid"></div>
@@ -292,6 +293,30 @@ let bets = [];
 let txns = [];
 let nextId = 1;
 let nextTxnId = 1;
+let undoStack = [];
+
+function snapshot() {
+  undoStack.push({ bets: JSON.parse(JSON.stringify(bets)), txns: JSON.parse(JSON.stringify(txns)) });
+  if (undoStack.length > 50) undoStack.shift();
+  updateUndoBtn();
+}
+
+function updateUndoBtn() {
+  const btn = document.getElementById('undoBtn');
+  if (btn) btn.disabled = undoStack.length === 0;
+}
+
+async function undo() {
+  if (!undoStack.length) return;
+  const prev = undoStack.pop();
+  bets = prev.bets;
+  txns = prev.txns;
+  nextId    = bets.length ? Math.max(...bets.map(b=>b.id)) + 1 : 1;
+  nextTxnId = txns.length ? Math.max(...txns.map(t=>t.id)) + 1 : 1;
+  await saveData();
+  render();
+  updateUndoBtn();
+}
 
 async function loadData() {
   try {
@@ -562,6 +587,7 @@ function render() {
 
 function deleteBet(id) {
   if (!confirm('Delete this bet?')) return;
+  snapshot();
   bets = bets.filter(b => b.id !== id);
   save();
   render();
@@ -675,6 +701,7 @@ function saveTxn() {
     type,
     amount: parseFloat(amount.toFixed(2)),
   };
+  snapshot();
   if (editingTxnId !== null) {
     txns = txns.map(t => t.id === editingTxnId ? { ...t, ...fields } : t);
   } else {
@@ -687,6 +714,7 @@ function saveTxn() {
 
 function deleteTxn(id) {
   if (!confirm('Delete this transaction?')) return;
+  snapshot();
   txns = txns.filter(t => t.id !== id);
   saveTxns();
   render();
@@ -749,6 +777,7 @@ function saveBet() {
     chance: parseFloat(document.getElementById('f-chance').value) || 0,
   };
   if (!fields.date || !fields.event || !fields.wager) { alert('Fill in date, event, and wager.'); return; }
+  snapshot();
   if (editingId !== null) {
     bets = bets.map(b => b.id === editingId ? { ...b, ...fields } : b);
   } else {
