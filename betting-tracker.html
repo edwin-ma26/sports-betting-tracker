@@ -323,10 +323,10 @@ function saveTxns() { localStorage.setItem('txns', JSON.stringify(txns)); }
 
 // ─── Derived stats ────────────────────────────────────────────────────────────
 function netProfit(b) {
-  // Real P&L: bonus losses cost $0, wins still earn payout - wager
+  // Bonus bets cost nothing — profit is just the payout received
   if (b.status === 'Pending') return null;
   if (b.status === 'Push') return 0;
-  if (b.bonus && b.status === 'Lost') return 0;
+  if (b.bonus) return b.payout;
   return b.payout - b.wager;
 }
 
