@@ -15,6 +15,7 @@
   .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; padding: 24px 32px 0; }
   .stat-card { background: #1a1f2e; border: 1px solid #2d3748; border-radius: 10px; padding: 18px 20px; }
   .stat-card .label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  #statsGrid .stat-card .label { min-height: 2.2em; display: flex; align-items: flex-end; }
   .stat-card .value { font-size: 1.5rem; font-weight: 700; }
   .stat-card .value.green { color: #22c55e; }
   .stat-card .value.red { color: #ef4444; }
@@ -302,6 +303,7 @@ let bets = JSON.parse(localStorage.getItem('bets') || 'null') || [
   { id:11,date:'2026-06-22', site:'Kalshi',     event:'France vs Iraq',        betType:'France to win',                   wager:38.48, payout:41.18, status:'Won',  bonus:false, chance:0 },
   { id:12,date:'2026-06-22', site:'Kalshi',     event:'France vs Iraq',        betType:'France 10+ corners',              wager:48.51, payout:2.99,  status:'Lost', bonus:false, chance:0 },
   { id:13,date:'2026-06-22', site:'Kalshi',     event:'France vs Iraq',        betType:'Tie',                             wager:19.99, payout:2.95,  status:'Lost', bonus:false, chance:0 },
+  { id:14,date:'2026-06-22', site:'Kalshi',     event:'Jordan vs Algeria',     betType:'Algeria to win',                  wager:19.78, payout:35.92, status:'Won',  bonus:false, chance:0 },
 ];
 let nextId = Math.max(...bets.map(b=>b.id)) + 1;
 
@@ -444,24 +446,19 @@ function render() {
       <div class="sub">$${stats.bonusWagered.toFixed(2)} used of $${TOTAL_BONUS.toFixed(2)}</div>
     </div>
     <div class="stat-card">
-      <div class="label">Real $ P&L</div>
-      <div class="value ${stats.realNetProfit >= 0 ? 'green':'red'}">${fmtMoney(stats.realNetProfit)}</div>
-      <div class="sub">On cash bets</div>
-    </div>
-    <div class="stat-card">
-      <div class="label">Bonus $ P&L</div>
-      <div class="value ${stats.bonusNetProfit >= 0 ? 'green':'red'}">${fmtMoney(stats.bonusNetProfit)}</div>
-      <div class="sub">Net winnings from bonuses</div>
-    </div>
-    <div class="stat-card">
       <div class="label">Total P&L</div>
       <div class="value ${stats.totalProfit >= 0 ? 'green':'red'}">${fmtMoney(stats.totalProfit)}</div>
-      <div class="sub" style="margin-top:4px">If real: <span style="color:${stats.hypTotalProfit>=0?'#22c55e':'#ef4444'};font-weight:600">${fmtMoney(stats.hypTotalProfit)}</span></div>
+      <div class="sub">Real cash + bonus winnings</div>
     </div>
     <div class="stat-card">
-      <div class="label">ROI</div>
-      <div class="value ${parseFloat(stats.roi) >= 0 ? 'green':'red'}">${stats.roi}%</div>
-      <div class="sub">If real: <span style="color:${parseFloat(stats.hypRoi)>=0?'#22c55e':'#ef4444'};font-weight:600">${stats.hypRoi}%</span></div>
+      <div class="label">Hypothetical P&L</div>
+      <div class="value ${stats.hypTotalProfit >= 0 ? 'green':'red'}">${fmtMoney(stats.hypTotalProfit)}</div>
+      <div class="sub">If all bets were real money</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">ROI (if real)</div>
+      <div class="value ${parseFloat(stats.hypRoi) >= 0 ? 'green':'red'}">${stats.hypRoi}%</div>
+      <div class="sub">Actual: <span style="color:${parseFloat(stats.roi)>=0?'#22c55e':'#ef4444'};font-weight:600">${stats.roi}%</span></div>
     </div>
     <div class="stat-card">
       <div class="label">Units Wagered</div>
